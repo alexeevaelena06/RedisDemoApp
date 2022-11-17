@@ -1,0 +1,66 @@
+app:
+  name: redis-demo
+  key: ump/dbo
+spring:
+  application:
+    name: ${app.name}
+---
+spring:
+  config:
+    activate:
+      on-profile: default
+    import: 'consul:'
+  application:
+    name: ${app.name}
+  cloud:
+    consul:
+      enabled: true
+      host: ${CONSUL_HOST}
+      port: ${CONSUL_PORT}
+      config:
+        acl-token: ${CONSUL_ACCESS_READ}
+        enabled: true
+        failFast: true
+        format: YAML
+        prefixes: ${app.key}
+        data-key: data
+        watch:
+          wait-time: 15
+          delay: 5000
+---
+management:
+  server:
+    port: 8081
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+    distribution:
+      percentiles-histogram:
+        http:
+          server:
+            requests: true
+      percentiles:
+        all: 0.5, 0.75, 0.9, 0.999
+  endpoint:
+    prometheus:
+      enabled: true
+    metrics:
+      enabled: true
+    health:
+      enabled: true
+      show-details: always
+      probes:
+        enabled: true
+  endpoints:
+    web:
+      exposure:
+        include: env, health, loggers, scheduledtasks, threaddump, prometheus, metrics
+logging:
+  level:
+    root: info
+springdoc:
+  api-docs:
+    path: /${app.name}/api-docs
+  swagger-ui:
+    path: /${app.name}/docs/swagger-ui.html

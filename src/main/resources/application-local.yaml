@@ -1,0 +1,100 @@
+app:
+  name: redis-demo
+  http-client:
+    idle-timeout: 5000
+    connection-ttl: 30000
+    total-connections: &total 40
+    route-connections: 30
+    # время на установку tcp-соединения
+    connection-timeout: 30s
+    read-timeout: 30s
+    # время на получение соединения от менеджера соединений.
+    request-timeout: 300
+    # время максимальной неактивности соединения между двумя пакетами данных
+    socket-timeout: 1400
+  jmx:
+    enabled: true
+  business:
+    settings:
+      maxEventsInBatch: 100
+      maxBatches: 10
+      sendingInterval: 10
+logging:
+  level:
+    root: info
+management:
+  health:
+    consul:
+      enabled: false
+    redis:
+      enabled: false
+server:
+  port: 8080
+spring:
+  main:
+    # Когда вы столкнулись с тем же именем, он разрешен перезаписать регистрацию.
+    # Сделано для бина RedisCustomConfig
+    allow-bean-definition-overriding: true
+  config:
+    import: 'consul:'
+  application:
+    name: ${app.name}
+  cloud:
+    consul:
+      enabled: true
+      host: localhost
+      port: 8501
+      config:
+        acl-token: 84118966-6348-66ce-8b6e-3bcc9a007c81
+        enabled: true
+        failFast: true
+        format: YAML
+        prefixes: ${app.key}
+        data-key: data
+        watch:
+          wait-time: 15
+          delay: 5000
+    cache:
+      type: redis
+      redis:
+        time-to-live: 60000
+    redis:
+      host: localhost
+      port: 6379
+      cluster:
+        max-redirects: 3
+        nodes: localhost:6379
+        enabled: false
+      username: default
+      password: c75d95575aa684ae6fad7c424860a2943a34c8b3589507558655efb17559a85a
+      ssl: false
+      # Connection timeout.
+      connect-timeout: 1500
+      # Redis имеет 16 шардов по умолчанию, вот конкретный используемый шард, по умолчанию 0
+      database: 0
+      lettuce:
+        pool:
+          # Minimum number of idle connections in the connection pool.
+          min-idle: 1
+          # Maximum number of connections in the connection pool. A negative value indicates no limit.
+          max-active: *total
+          # Maximum time for waiting for connections in the connection pool. A negative value indicates no limit.
+          max-wait: 5000
+          # Maximum number of idle connections in the connection pool.
+          max-idle: *total
+          enabled: true
+  kafka:
+    server: localhost:9092
+    jaas_config: org.apache.kafka.common.security.plain.PlainLoginModule required username="USER" password="PASS"
+    sasl_mechanism: PLAIN
+    security_protocol: SASL_PLAINTEXT
+    topic: redis.demo.events
+    consumer:
+      auto-offset-reset: earliest
+      key-deserializer: org.springframework.kafka.support.serializer.ParseStringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      enable-auto-commit: false
+    producer:
+      acks: 1
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
